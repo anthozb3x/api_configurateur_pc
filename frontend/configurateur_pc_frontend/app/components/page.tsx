@@ -80,7 +80,16 @@ export default function ComponentsPage() {
       comp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       comp.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
       comp.model.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || comp.category === selectedCategory;
+    
+    let matchesCategory = true;
+    if (selectedCategory) {
+      if (typeof comp.category === 'string') {
+        matchesCategory = comp.category === selectedCategory;
+      } else {
+        matchesCategory = comp.category._id === selectedCategory;
+      }
+    }
+    
     const matchesBrand = !selectedBrand || comp.brand === selectedBrand;
     return matchesSearch && matchesCategory && matchesBrand;
   });
@@ -195,7 +204,15 @@ export default function ComponentsPage() {
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une catégorie" />
+                      <SelectValue 
+                        placeholder="Sélectionner une catégorie"
+                        value={formData.category}
+                        render={(value) => {
+                          if (!value) return 'Sélectionner une catégorie';
+                          const category = categories.find((cat) => cat._id === value);
+                          return category?.name || value;
+                        }}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
@@ -347,7 +364,15 @@ export default function ComponentsPage() {
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Toutes les catégories" />
+              <SelectValue 
+                placeholder="Toutes les catégories"
+                value={selectedCategory}
+                render={(value) => {
+                  if (!value) return 'Toutes les catégories';
+                  const category = categories.find((cat) => cat._id === value);
+                  return category?.name || value;
+                }}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Toutes les catégories</SelectItem>

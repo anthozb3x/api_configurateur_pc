@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
@@ -31,8 +32,15 @@ export function Sidebar() {
 
   return (
     <div className="flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <h1 className="text-lg font-semibold">ConfigurateurPC</h1>
+      <div className="flex items-center justify-center border-b border-sidebar-border px-6 py-6">
+        <Image
+          src="/logo(2).png"
+          alt="ConfigurateurPC Logo"
+          width={200}
+          height={200}
+          style={{ width: '180px', height: '180px', maxWidth: '100%' }}
+          className="object-contain"
+        />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navigation.map((item) => {

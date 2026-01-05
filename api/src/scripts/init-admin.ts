@@ -12,6 +12,13 @@ async function initAdmin() {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@configurateurpc.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
+    // Vérifier que le mot de passe respecte les critères de sécurité
+    if (adminPassword.length < 6) {
+      console.error('❌ Le mot de passe doit contenir au moins 6 caractères');
+      await mongoose.connection.close();
+      process.exit(1);
+    }
+
     // Check if admin already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
     if (existingAdmin) {
@@ -20,10 +27,10 @@ async function initAdmin() {
       return;
     }
 
-    // Create admin user
+    // Créer l'administrateur (le hook pre('save') hash automatiquement le mot de passe)
     const admin = new User({
       email: adminEmail,
-      password: adminPassword,
+      password: adminPassword, // Sera hashé automatiquement par le hook pre('save')
       firstName: 'Admin',
       lastName: 'ConfigurateurPC',
       role: 'admin',
@@ -34,6 +41,7 @@ async function initAdmin() {
     console.log(`   Email: ${adminEmail}`);
     console.log(`   Mot de passe: ${adminPassword}`);
     console.log('⚠️  N\'oubliez pas de changer le mot de passe après la première connexion');
+    console.log('🔒 Le mot de passe a été hashé de manière sécurisée');
 
     await mongoose.connection.close();
   } catch (error) {

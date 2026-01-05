@@ -299,7 +299,15 @@ export default function ConfigurationsPage() {
                         onValueChange={setSelectedCategory}
                       >
                         <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Filtrer par catégorie" />
+                          <SelectValue 
+                            placeholder="Filtrer par catégorie"
+                            value={selectedCategory}
+                            render={(value) => {
+                              if (!value) return 'Filtrer par catégorie';
+                              const category = categories.find((cat) => cat._id === value);
+                              return category?.name || value;
+                            }}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">Toutes les catégories</SelectItem>
@@ -315,7 +323,17 @@ export default function ConfigurationsPage() {
                         onValueChange={setSelectedComponent}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Sélectionner un composant" />
+                          <SelectValue 
+                            placeholder="Sélectionner un composant"
+                            value={selectedComponent}
+                            render={(value) => {
+                              if (!value) return 'Sélectionner un composant';
+                              const component = components.find((c) => c._id === value);
+                              return component 
+                                ? `${component.title} - ${component.brand} (${component.model})`
+                                : value;
+                            }}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {filteredComponents.map((comp) => (
@@ -409,7 +427,25 @@ export default function ConfigurationsPage() {
                                       }}
                                     >
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Aucun partenaire" />
+                                        <SelectValue 
+                                          placeholder="Aucun partenaire"
+                                          value={selectedComp.selectedMerchant || ''}
+                                          render={(value) => {
+                                            if (!value) return 'Aucun partenaire';
+                                            const merchant = merchants.find((m) => m._id === value);
+                                            if (!merchant) return value;
+                                            const price = merchant.prices.find(
+                                              (p) =>
+                                                (typeof p.component === 'string'
+                                                  ? p.component
+                                                  : p.component._id) ===
+                                                selectedComp.component
+                                            );
+                                            return price
+                                              ? `${merchant.name} - ${price.price.toFixed(2)} €`
+                                              : merchant.name;
+                                          }}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="">Aucun partenaire</SelectItem>
