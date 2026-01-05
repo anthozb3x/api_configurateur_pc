@@ -8,6 +8,8 @@ export interface IComponent extends Document {
   description?: string;
   specifications: Record<string, any>;
   imageUrl?: string;
+  price?: number;
+  currency?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +48,15 @@ const componentSchema = new Schema<IComponent>(
     imageUrl: {
       type: String,
       trim: true,
+    },
+    price: {
+      type: Number,
+      min: [0, 'Le prix doit être positif'],
+    },
+    currency: {
+      type: String,
+      default: 'EUR',
+      uppercase: true,
     },
   },
   {

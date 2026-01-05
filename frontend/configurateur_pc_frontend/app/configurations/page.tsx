@@ -30,7 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { Search, Eye, Trash2, Plus, X } from 'lucide-react';
+import { Search, Eye, Trash2, Plus, X, Download } from 'lucide-react';
 import type { Configuration, User, Component, Merchant, Category } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
@@ -101,6 +101,23 @@ export default function ConfigurationsPage() {
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la suppression');
+    }
+  };
+
+  const handleExportPDF = async (id: string) => {
+    try {
+      const blob = await api.exportConfigurationPDF(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `configuration-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF exporté avec succès');
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de l\'export PDF');
     }
   };
 
@@ -201,6 +218,40 @@ export default function ConfigurationsPage() {
     );
   };
 
+  const getComponentPrice = (
+    componentId: string,
+    selectedMerchantId?: string
+  ): number => {
+    const component = components.find((c) => c._id === componentId);
+    if (!component) return 0;
+
+    // Si un marchand est sélectionné, utiliser son prix
+    if (selectedMerchantId) {
+      const merchant = merchants.find((m) => m._id === selectedMerchantId);
+      if (merchant) {
+        const merchantPrice = merchant.prices.find(
+          (p) =>
+            (typeof p.component === 'string'
+              ? p.component
+              : p.component._id) === componentId
+        );
+        if (merchantPrice) {
+          return merchantPrice.price;
+        }
+      }
+    }
+
+    // Sinon, utiliser le prix du composant
+    return component.price || 0;
+  };
+
+  const calculateTotal = (): number => {
+    return formData.selectedComponents.reduce((total, comp) => {
+      const price = getComponentPrice(comp.component, comp.selectedMerchant);
+      return total + price * comp.quantity;
+    }, 0);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -218,7 +269,7 @@ export default function ConfigurationsPage() {
                 Créer une configuration
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Créer une nouvelle configuration</DialogTitle>
                 <DialogDescription>
@@ -322,7 +373,7 @@ export default function ConfigurationsPage() {
                                   <X className="h-4 w-4" />
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                   <Label>Quantité</Label>
                                   <Input
@@ -384,6 +435,26 @@ export default function ConfigurationsPage() {
                                     </Select>
                                   </div>
                                 )}
+                                <div className="space-y-2">
+                                  <Label>Prix</Label>
+                                  <div className="flex items-center h-10 px-3 py-2 text-sm border rounded-md bg-muted">
+                                    {getComponentPrice(
+                                      selectedComp.component,
+                                      selectedComp.selectedMerchant
+                                    ).toFixed(2)}{' '}
+                                    {formData.currency} / unité
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Total:{' '}
+                                    {(
+                                      getComponentPrice(
+                                        selectedComp.component,
+                                        selectedComp.selectedMerchant
+                                      ) * selectedComp.quantity
+                                    ).toFixed(2)}{' '}
+                                    {formData.currency}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           );
@@ -392,6 +463,24 @@ export default function ConfigurationsPage() {
                     )}
                   </div>
                 </div>
+
+                {formData.selectedComponents.length > 0 && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Nombre de composants: {formData.selectedComponents.length}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Total</p>
+                        <p className="text-2xl font-bold">
+                          {calculateTotal().toFixed(2)} {formData.currency}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2">
                   <Button
@@ -475,13 +564,23 @@ export default function ConfigurationsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleViewConfig(config)}
+                            title="Voir les détails"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleExportPDF(config._id)}
+                            title="Exporter en PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(config._id)}
+                            title="Supprimer"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -496,12 +595,26 @@ export default function ConfigurationsPage() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedConfig?.name}</DialogTitle>
-              <DialogDescription>
-                Détails de la configuration
-              </DialogDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>{selectedConfig?.name}</DialogTitle>
+                  <DialogDescription>
+                    Détails de la configuration
+                  </DialogDescription>
+                </div>
+                {selectedConfig && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportPDF(selectedConfig._id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exporter en PDF
+                  </Button>
+                )}
+              </div>
             </DialogHeader>
             {selectedConfig && (
               <div className="space-y-4">

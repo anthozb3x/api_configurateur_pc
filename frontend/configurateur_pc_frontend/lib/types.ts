@@ -27,6 +27,8 @@ export interface Component {
   description?: string;
   specifications: Record<string, any>;
   imageUrl?: string;
+  price?: number;
+  currency?: string;
   createdAt: string;
   updatedAt: string;
 }

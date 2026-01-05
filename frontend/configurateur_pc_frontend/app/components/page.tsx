@@ -52,6 +52,8 @@ export default function ComponentsPage() {
     description: '',
     imageUrl: '',
     specifications: '',
+    price: '',
+    currency: 'EUR',
   });
 
   useEffect(() => {
@@ -96,6 +98,8 @@ export default function ComponentsPage() {
         description: component.description || '',
         imageUrl: component.imageUrl || '',
         specifications: JSON.stringify(component.specifications, null, 2),
+        price: component.price?.toString() || '',
+        currency: component.currency || 'EUR',
       });
     } else {
       setEditingComponent(null);
@@ -107,6 +111,8 @@ export default function ComponentsPage() {
         description: '',
         imageUrl: '',
         specifications: '',
+        price: '',
+        currency: 'EUR',
       });
     }
     setIsDialogOpen(true);
@@ -120,6 +126,8 @@ export default function ComponentsPage() {
         specifications: formData.specifications
           ? JSON.parse(formData.specifications)
           : {},
+        price: formData.price ? parseFloat(formData.price) : undefined,
+        currency: formData.currency || undefined,
       };
 
       if (editingComponent) {
@@ -260,6 +268,41 @@ export default function ComponentsPage() {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Prix</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: e.target.value })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Devise</Label>
+                    <Select
+                      value={formData.currency}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, currency: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="specifications">
                     Spécifications (JSON)
@@ -338,19 +381,20 @@ export default function ComponentsPage() {
                 <TableHead>Titre</TableHead>
                 <TableHead>Marque</TableHead>
                 <TableHead>Modèle</TableHead>
+                <TableHead className="text-right">Prix</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={6} className="text-center">
                     Chargement...
                   </TableCell>
                 </TableRow>
               ) : filteredComponents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={6} className="text-center">
                     Aucun composant trouvé
                   </TableCell>
                 </TableRow>
@@ -369,6 +413,11 @@ export default function ComponentsPage() {
                       </TableCell>
                       <TableCell>{component.brand}</TableCell>
                       <TableCell>{component.model}</TableCell>
+                      <TableCell className="text-right">
+                        {component.price
+                          ? `${component.price.toFixed(2)} ${component.currency || 'EUR'}`
+                          : '-'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button

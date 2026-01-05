@@ -35,9 +35,18 @@ router.get(
  *   get:
  *     summary: Récupère un partenaire par son ID
  *     tags: [Merchants]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
  *     responses:
  *       200:
  *         description: Détails du partenaire
+ *       404:
+ *         description: Partenaire non trouvé
  */
 router.get(
   '/:id',
@@ -69,9 +78,44 @@ router.get(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - websiteUrl
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Amazon"
+ *               websiteUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://www.amazon.fr"
+ *               logoUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/logo.png"
+ *               commissionRate:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 example: 5.5
+ *               affiliationConditions:
+ *                 type: string
+ *                 example: "Conditions d'affiliation..."
  *     responses:
  *       201:
  *         description: Partenaire créé
+ *       400:
+ *         description: Erreur de validation
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.post(
   '/',
@@ -111,9 +155,50 @@ router.post(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - component
+ *               - price
+ *             properties:
+ *               component:
+ *                 type: string
+ *                 format: mongoId
+ *                 example: "507f1f77bcf86cd799439011"
+ *               price:
+ *                 type: number
+ *                 minimum: 0
+ *                 example: 299.99
+ *               currency:
+ *                 type: string
+ *                 default: "EUR"
+ *                 example: "EUR"
+ *               url:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/product"
  *     responses:
  *       200:
  *         description: Prix ajouté/mis à jour
+ *       400:
+ *         description: Erreur de validation
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.post(
   '/:id/prices',
@@ -179,9 +264,53 @@ router.post(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Amazon"
+ *               websiteUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://www.amazon.fr"
+ *               logoUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/logo.png"
+ *               commissionRate:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 example: 5.5
+ *               affiliationConditions:
+ *                 type: string
+ *                 example: "Conditions d'affiliation..."
+ *               isActive:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       200:
  *         description: Partenaire mis à jour
+ *       400:
+ *         description: Erreur de validation
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.put(
   '/:id',
@@ -224,9 +353,22 @@ router.put(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
  *     responses:
  *       200:
  *         description: Partenaire supprimé
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.delete(
   '/:id',
@@ -246,4 +388,5 @@ router.delete(
 );
 
 export default router;
+
 

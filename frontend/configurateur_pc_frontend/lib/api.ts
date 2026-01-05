@@ -109,6 +109,8 @@ class ApiService {
     description?: string;
     specifications?: Record<string, any>;
     imageUrl?: string;
+    price?: number;
+    currency?: string;
   }) {
     return this.request<Component>('/components', {
       method: 'POST',
@@ -126,6 +128,8 @@ class ApiService {
       description?: string;
       specifications?: Record<string, any>;
       imageUrl?: string;
+      price?: number;
+      currency?: string;
     }
   ) {
     return this.request<Component>(`/components/${id}`, {
@@ -207,7 +211,7 @@ class ApiService {
   }
 
   async getUser(id: string) {
-    return this.request<User & { configurations: Configuration[] }>(
+    return this.request<{ user: User; configurations: Configuration[] }>(
       `/users/${id}`
     );
   }
@@ -256,6 +260,27 @@ class ApiService {
     return this.request(`/configurations/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async exportConfigurationPDF(id: string): Promise<Blob> {
+    const token = this.getToken();
+    const headers: HeadersInit = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const response = await fetch(`${API_URL}/configurations/${id}/export-pdf`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        message: 'Une erreur est survenue',
+      }));
+      throw new Error(error.message || 'Une erreur est survenue');
+    }
+
+    return response.blob();
   }
 }
 

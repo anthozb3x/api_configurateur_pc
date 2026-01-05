@@ -51,7 +51,8 @@ export default function UsersPage() {
   const handleViewUser = async (user: User) => {
     try {
       const userData = await api.getUser(user._id);
-      setSelectedUser(userData);
+      // L'API retourne { user, configurations }
+      setSelectedUser(userData.user);
       setUserConfigurations(userData.configurations || []);
       setIsDialogOpen(true);
     } catch (error: any) {
