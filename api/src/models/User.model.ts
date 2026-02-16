@@ -1,3 +1,47 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *         - firstName
+ *         - lastName
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID unique de l'utilisateur
+ *           example: "507f1f77bcf86cd799439011"
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Adresse email unique
+ *           example: "jean.dupont@example.com"
+ *         firstName:
+ *           type: string
+ *           description: Prénom
+ *           example: "Jean"
+ *         lastName:
+ *           type: string
+ *           description: Nom de famille
+ *           example: "Dupont"
+ *         role:
+ *           type: string
+ *           enum: [user, admin]
+ *           default: user
+ *           description: Rôle de l'utilisateur
+ *           example: "user"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de création
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de dernière modification
+ */
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
