@@ -82,11 +82,11 @@ router.post(
       // Generate JWT
       const token = jwt.sign(
         { userId: user._id.toString() },
-        jwtSecret as string,
-        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string }
+        jwtSecret,
+        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'Utilisateur créé avec succès',
         token,
         user: {
@@ -103,7 +103,7 @@ router.post(
         return res.status(400).json({ message: 'Cet email est déjà utilisé' });
       }
       console.error('Erreur lors de l\'inscription:', error);
-      res.status(500).json({ message: 'Une erreur est survenue lors de l\'inscription' });
+      return res.status(500).json({ message: 'Une erreur est survenue lors de l\'inscription' });
     }
   }
 );
@@ -172,11 +172,11 @@ router.post(
       // Generate JWT
       const token = jwt.sign(
         { userId: user._id.toString() },
-        jwtSecret as string,
-        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string }
+        jwtSecret,
+        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
       );
 
-      res.json({
+      return res.json({
         message: 'Connexion réussie',
         token,
         user: {
@@ -190,7 +190,7 @@ router.post(
     } catch (error: any) {
       // Ne pas exposer les détails de l'erreur pour des raisons de sécurité
       console.error('Erreur lors de la connexion:', error);
-      res.status(500).json({ message: 'Une erreur est survenue lors de la connexion' });
+      return res.status(500).json({ message: 'Une erreur est survenue lors de la connexion' });
     }
   }
 );
