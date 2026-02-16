@@ -30,7 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { Search, Eye, Trash2, Plus, X, Download } from 'lucide-react';
+import { Search, Eye, Trash2, Plus, X, Download, CalendarIcon } from 'lucide-react';
 import type { Configuration, User, Component, Merchant, Category } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
@@ -57,6 +57,8 @@ export default function ConfigurationsPage() {
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedComponent, setSelectedComponent] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -191,10 +193,19 @@ export default function ConfigurationsPage() {
       typeof config.user === 'string'
         ? 'Utilisateur'
         : `${config.user.firstName} ${config.user.lastName}`;
-    return (
+    const matchesSearch =
       config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      user.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const configDate = new Date(config.createdAt);
+    const matchesDateFrom = dateFrom
+      ? configDate >= new Date(dateFrom)
+      : true;
+    const matchesDateTo = dateTo
+      ? configDate <= new Date(dateTo + 'T23:59:59')
+      : true;
+
+    return matchesSearch && matchesDateFrom && matchesDateTo;
   });
 
   const filteredComponents = components.filter((comp) => {
@@ -542,14 +553,49 @@ export default function ConfigurationsPage() {
           </Dialog>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom ou utilisateur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou utilisateur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2 items-center">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-40"
+              placeholder="Date début"
+              title="Date de début"
+            />
+            <span className="text-muted-foreground">-</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-40"
+              placeholder="Date fin"
+              title="Date de fin"
+            />
+            {(dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                title="Effacer les filtres de date"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="rounded-lg border">
