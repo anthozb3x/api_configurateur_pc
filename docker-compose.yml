@@ -16,6 +16,38 @@ services:
     networks:
       - configurateurpc-network
 
+  api:
+    build: ./api
+    container_name: configurateurpc-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/configurateurpc?authSource=admin
+      JWT_SECRET: changeme-in-production
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3001
+      SEED_DATA: "true"
+    depends_on:
+      - mongodb
+    networks:
+      - configurateurpc-network
+
+  frontend:
+    build:
+      context: ./frontend/configurateur_pc_frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000/api
+    container_name: configurateurpc-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
+    networks:
+      - configurateurpc-network
+
 volumes:
   mongodb_data:
     driver: local
@@ -23,4 +55,3 @@ volumes:
 networks:
   configurateurpc-network:
     driver: bridge
-
