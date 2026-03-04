@@ -274,6 +274,87 @@ describe('Merchant Routes', () => {
     });
   });
 
+  describe('DELETE /api/merchants/:id/prices/:componentId', () => {
+    it('devrait supprimer le prix d\'un composant (admin)', async () => {
+      const merchant = await Merchant.create({
+        name: 'Amazon',
+        websiteUrl: 'https://www.amazon.fr',
+        prices: [
+          {
+            component: componentId,
+            price: 549.99,
+            currency: 'EUR',
+            lastUpdated: new Date(),
+          },
+        ],
+      });
+
+      const response = await request(app)
+        .delete(`/api/merchants/${merchant._id}/prices/${componentId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.prices).toHaveLength(0);
+    });
+
+    it('devrait retourner 404 pour un marchand inexistant', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const response = await request(app)
+        .delete(`/api/merchants/${fakeId}/prices/${componentId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('devrait refuser pour un utilisateur non-admin', async () => {
+      const merchant = await Merchant.create({
+        name: 'Amazon',
+        websiteUrl: 'https://www.amazon.fr',
+        prices: [
+          {
+            component: componentId,
+            price: 549.99,
+            currency: 'EUR',
+            lastUpdated: new Date(),
+          },
+        ],
+      });
+
+      const response = await request(app)
+        .delete(`/api/merchants/${merchant._id}/prices/${componentId}`)
+        .set('Authorization', `Bearer ${userToken}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    it('devrait laisser les autres prix intacts', async () => {
+      const otherCategory = await Category.create({ name: 'GPU' });
+      const otherComponent = await Component.create({
+        category: otherCategory._id,
+        title: 'RTX 4090',
+        brand: 'NVIDIA',
+        model: '4090',
+      });
+      const otherComponentId = otherComponent._id.toString();
+
+      const merchant = await Merchant.create({
+        name: 'Amazon',
+        websiteUrl: 'https://www.amazon.fr',
+        prices: [
+          { component: componentId, price: 549.99, currency: 'EUR', lastUpdated: new Date() },
+          { component: otherComponentId, price: 1899.99, currency: 'EUR', lastUpdated: new Date() },
+        ],
+      });
+
+      const response = await request(app)
+        .delete(`/api/merchants/${merchant._id}/prices/${componentId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.prices).toHaveLength(1);
+    });
+  });
+
   describe('PUT /api/merchants/:id', () => {
     it('devrait mettre à jour un marchand (admin)', async () => {
       const merchant = await Merchant.create({

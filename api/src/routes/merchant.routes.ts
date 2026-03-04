@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import Merchant from '../models/Merchant.model';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.middleware';
@@ -127,7 +127,7 @@ router.post(
     body('logoUrl').optional().isURL(),
     body('commissionRate').optional().isFloat({ min: 0, max: 100 }),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -210,7 +210,7 @@ router.post(
     body('currency').optional().isString(),
     body('url').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -245,6 +245,62 @@ router.post(
           lastUpdated: new Date(),
         } as any);
       }
+
+      await merchant.save();
+      await merchant.populate('prices.component', 'title brand model');
+
+      res.json(merchant);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/merchants/{id}/prices/{componentId}:
+ *   delete:
+ *     summary: Supprime le prix d'un composant chez un partenaire (Admin uniquement)
+ *     tags: [Merchants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *       - in: path
+ *         name: componentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du composant dont le prix doit être supprimé
+ *     responses:
+ *       200:
+ *         description: Prix supprimé, retourne le partenaire mis à jour
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
+ */
+router.delete(
+  '/:id/prices/:componentId',
+  authenticate,
+  requireAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const merchant = await Merchant.findById(req.params.id);
+      if (!merchant) {
+        return res.status(404).json({ message: 'Partenaire non trouvé' });
+      }
+
+      merchant.prices = merchant.prices.filter(
+        (p) => p.component.toString() !== req.params.componentId
+      ) as typeof merchant.prices;
 
       await merchant.save();
       await merchant.populate('prices.component', 'title brand model');
@@ -321,7 +377,7 @@ router.put(
     body('websiteUrl').optional().isURL(),
     body('logoUrl').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -374,7 +430,7 @@ router.delete(
   '/:id',
   authenticate,
   requireAdmin,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const merchant = await Merchant.findByIdAndDelete(req.params.id);
       if (!merchant) {

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import PDFDocument from 'pdfkit';
 import Configuration from '../models/Configuration.model';
@@ -28,7 +28,7 @@ const router = express.Router();
 router.get(
   '/',
   authenticate,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const filter: any = {};
 
@@ -83,7 +83,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const configuration = await Configuration.findById(req.params.id)
         .populate('user', 'firstName lastName email')
@@ -180,7 +180,7 @@ router.post(
     body('components.*.quantity').isInt({ min: 1 }),
     body('components.*.selectedMerchant').optional().isMongoId(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -321,7 +321,7 @@ router.put(
     body('name').optional().trim().notEmpty(),
     body('components').optional().isArray({ min: 1 }),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -425,7 +425,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const configuration = await Configuration.findById(req.params.id);
       if (!configuration) {
@@ -481,7 +481,7 @@ router.delete(
 router.get(
   '/:id/export-pdf',
   authenticate,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const configuration = await Configuration.findById(req.params.id)
         .populate('user', 'firstName lastName email')

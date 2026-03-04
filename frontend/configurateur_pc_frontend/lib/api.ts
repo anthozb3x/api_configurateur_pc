@@ -205,6 +205,19 @@ class ApiService {
     });
   }
 
+  async deleteMerchantPrice(merchantId: string, componentId: string) {
+    return this.request<Merchant>(`/merchants/${merchantId}/prices/${componentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getComponentPrices(componentId: string) {
+    return this.request<Array<{
+      merchant: { _id: string; name: string; websiteUrl: string; logoUrl?: string };
+      price: { price: number; currency: string; url?: string; lastUpdated: string };
+    }>>(`/components/${componentId}/prices`);
+  }
+
   // Users
   async getUsers() {
     return this.request<User[]>('/users');

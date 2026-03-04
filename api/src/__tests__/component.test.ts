@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.model';
 import Category from '../models/Category.model';
 import Component from '../models/Component.model';
+import Merchant from '../models/Merchant.model';
 
 describe('Component Routes', () => {
   let adminToken: string;
@@ -19,6 +20,7 @@ describe('Component Routes', () => {
   });
 
   afterAll(async () => {
+    await Merchant.deleteMany({});
     await Component.deleteMany({});
     await Category.deleteMany({});
     await User.deleteMany({});
@@ -26,6 +28,7 @@ describe('Component Routes', () => {
   });
 
   beforeEach(async () => {
+    await Merchant.deleteMany({});
     await Component.deleteMany({});
     await Category.deleteMany({});
     await User.deleteMany({});
@@ -166,6 +169,55 @@ describe('Component Routes', () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toContain('non trouvé');
+    });
+  });
+
+  describe('GET /api/components/:id/prices', () => {
+    it('devrait retourner les prix marchands pour un composant', async () => {
+      const component = await Component.create({
+        category: categoryId,
+        title: 'Ryzen 9 7950X',
+        brand: 'AMD',
+        model: '7950X',
+        price: 599,
+      });
+      const compId = component._id.toString();
+
+      await Merchant.create({
+        name: 'Amazon',
+        websiteUrl: 'https://www.amazon.fr',
+        isActive: true,
+        prices: [{ component: compId, price: 549.99, currency: 'EUR', lastUpdated: new Date() }],
+      });
+
+      const response = await request(app).get(`/api/components/${compId}/prices`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0].merchant.name).toBe('Amazon');
+      expect(response.body[0].price.price).toBe(549.99);
+    });
+
+    it('devrait retourner un tableau vide si aucun marchand', async () => {
+      const component = await Component.create({
+        category: categoryId,
+        title: 'Ryzen 5 7600X',
+        brand: 'AMD',
+        model: '7600X',
+        price: 299,
+      });
+
+      const response = await request(app).get(`/api/components/${component._id}/prices`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(0);
+    });
+
+    it('devrait retourner 404 pour un composant inexistant', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const response = await request(app).get(`/api/components/${fakeId}/prices`);
+
+      expect(response.status).toBe(404);
     });
   });
 

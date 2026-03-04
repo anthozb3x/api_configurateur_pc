@@ -63,9 +63,9 @@
  *           format: date-time
  *           description: Date de dernière modification
  */
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IComponent extends Document {
+export interface IComponent {
   category: mongoose.Types.ObjectId;
   title: string;
   brand: string;

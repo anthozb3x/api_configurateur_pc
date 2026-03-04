@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,6 +42,7 @@ interface ConfigurationComponent {
 }
 
 export default function ConfigurationsPage() {
+  const router = useRouter();
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [components, setComponents] = useState<Component[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -645,7 +647,7 @@ export default function ConfigurationsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleViewConfig(config)}
+                            onClick={() => router.push(`/configurations/${config._id}`)}
                             title="Voir les détails"
                           >
                             <Eye className="h-4 w-4" />

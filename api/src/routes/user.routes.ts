@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { query } from 'express-validator';
 import User from '../models/User.model';
 import Configuration from '../models/Configuration.model';
@@ -30,7 +30,7 @@ router.get(
   [
     query('search').optional().trim(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const { search } = req.query;
       const filter: any = {};
@@ -69,7 +69,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       // Users can only see their own profile unless admin
       if (
