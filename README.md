@@ -9,6 +9,7 @@ Application de configuration de PC : catalogue de composants, comparaison de pri
 **Prérequis :** Docker Desktop installé et lancé.
 
 ```bash
+docker compose build
 docker compose up
 ```
 
@@ -27,9 +28,7 @@ Les données de démonstration sont chargées automatiquement.
 | Email                          | Mot de passe  | Rôle  |
 |-------------------------------|---------------|-------|
 | `admin@configurateurpc.com`   | `admin123`    | admin |
-| `jean.dupont@example.com`     | `password123` | user  |
-| `marie.martin@example.com`    | `password123` | user  |
-| `pierre.bernard@example.com`  | `password123` | user  |
+
 
 ---
 

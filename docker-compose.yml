@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:7.0
@@ -15,6 +13,12 @@ services:
       - mongodb_data:/data/db
     networks:
       - configurateurpc-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok", "--username", "admin", "--password", "admin123", "--authenticationDatabase", "admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   api:
     build: ./api
@@ -30,7 +34,8 @@ services:
       CORS_ORIGIN: http://localhost:3001
       SEED_DATA: "true"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - configurateurpc-network
 

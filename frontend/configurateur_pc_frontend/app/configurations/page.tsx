@@ -276,7 +276,7 @@ export default function ConfigurationsPage() {
             </p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Créer une configuration
