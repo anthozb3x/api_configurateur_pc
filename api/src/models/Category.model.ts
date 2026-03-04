@@ -1,3 +1,37 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Category:
+ *       type: object
+ *       required:
+ *         - name
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID unique de la catégorie
+ *           example: "507f1f77bcf86cd799439011"
+ *         name:
+ *           type: string
+ *           description: Nom de la catégorie
+ *           example: "Processeurs"
+ *         slug:
+ *           type: string
+ *           description: Slug auto-généré à partir du nom
+ *           example: "processeurs"
+ *         description:
+ *           type: string
+ *           description: Description de la catégorie
+ *           example: "Processeurs de bureau et portables"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de création
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de dernière modification
+ */
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICategory extends Document {

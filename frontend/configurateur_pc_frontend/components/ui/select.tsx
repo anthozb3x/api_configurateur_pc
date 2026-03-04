@@ -18,7 +18,37 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({ 
+  className, 
+  render,
+  value: controlledValue,
+  ...props 
+}: SelectPrimitive.Value.Props & {
+  render?: (value: string | null) => React.ReactNode;
+  value?: string;
+}) {
+  // Try to get value from context if available
+  let contextValue: string | null = null;
+  try {
+    const context = React.useContext(SelectPrimitive.Context as React.Context<any>);
+    contextValue = context?.value ?? null;
+  } catch {
+    // Context might not be available, use controlled value instead
+  }
+  
+  const value = controlledValue ?? contextValue;
+  
+  if (render) {
+    return (
+      <span
+        data-slot="select-value"
+        className={cn("flex flex-1 text-left", className)}
+      >
+        {render(value)}
+      </span>
+    );
+  }
+  
   return (
     <SelectPrimitive.Value
       data-slot="select-value"

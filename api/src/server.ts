@@ -44,20 +44,22 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running' });
 });
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGODB_URI || '')
-  .then(() => {
-    console.log('✅ Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+// MongoDB connection and server start (skip listen in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  mongoose
+    .connect(process.env.MONGODB_URI || '')
+    .then(() => {
+      console.log('✅ Connected to MongoDB');
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+      });
+    })
+    .catch((error: Error) => {
+      console.error('❌ MongoDB connection error:', error);
+      process.exit(1);
     });
-  })
-  .catch((error: Error) => {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  });
+}
 
 export default app;
 

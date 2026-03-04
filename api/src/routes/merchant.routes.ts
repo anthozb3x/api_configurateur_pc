@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import Merchant from '../models/Merchant.model';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.middleware';
@@ -35,9 +35,18 @@ router.get(
  *   get:
  *     summary: Récupère un partenaire par son ID
  *     tags: [Merchants]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
  *     responses:
  *       200:
  *         description: Détails du partenaire
+ *       404:
+ *         description: Partenaire non trouvé
  */
 router.get(
   '/:id',
@@ -69,9 +78,44 @@ router.get(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - websiteUrl
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Amazon"
+ *               websiteUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://www.amazon.fr"
+ *               logoUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/logo.png"
+ *               commissionRate:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 example: 5.5
+ *               affiliationConditions:
+ *                 type: string
+ *                 example: "Conditions d'affiliation..."
  *     responses:
  *       201:
  *         description: Partenaire créé
+ *       400:
+ *         description: Erreur de validation
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.post(
   '/',
@@ -83,7 +127,7 @@ router.post(
     body('logoUrl').optional().isURL(),
     body('commissionRate').optional().isFloat({ min: 0, max: 100 }),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -111,9 +155,50 @@ router.post(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - component
+ *               - price
+ *             properties:
+ *               component:
+ *                 type: string
+ *                 format: mongoId
+ *                 example: "507f1f77bcf86cd799439011"
+ *               price:
+ *                 type: number
+ *                 minimum: 0
+ *                 example: 299.99
+ *               currency:
+ *                 type: string
+ *                 default: "EUR"
+ *                 example: "EUR"
+ *               url:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/product"
  *     responses:
  *       200:
  *         description: Prix ajouté/mis à jour
+ *       400:
+ *         description: Erreur de validation
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.post(
   '/:id/prices',
@@ -125,7 +210,7 @@ router.post(
     body('currency').optional().isString(),
     body('url').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -173,15 +258,115 @@ router.post(
 
 /**
  * @swagger
+ * /api/merchants/{id}/prices/{componentId}:
+ *   delete:
+ *     summary: Supprime le prix d'un composant chez un partenaire (Admin uniquement)
+ *     tags: [Merchants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *       - in: path
+ *         name: componentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du composant dont le prix doit être supprimé
+ *     responses:
+ *       200:
+ *         description: Prix supprimé, retourne le partenaire mis à jour
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
+ */
+router.delete(
+  '/:id/prices/:componentId',
+  authenticate,
+  requireAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const merchant = await Merchant.findById(req.params.id);
+      if (!merchant) {
+        return res.status(404).json({ message: 'Partenaire non trouvé' });
+      }
+
+      merchant.prices = merchant.prices.filter(
+        (p) => p.component.toString() !== req.params.componentId
+      ) as typeof merchant.prices;
+
+      await merchant.save();
+      await merchant.populate('prices.component', 'title brand model');
+
+      res.json(merchant);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/merchants/{id}:
  *   put:
  *     summary: Met à jour un partenaire (Admin uniquement)
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Amazon"
+ *               websiteUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://www.amazon.fr"
+ *               logoUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: "https://example.com/logo.png"
+ *               commissionRate:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 example: 5.5
+ *               affiliationConditions:
+ *                 type: string
+ *                 example: "Conditions d'affiliation..."
+ *               isActive:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       200:
  *         description: Partenaire mis à jour
+ *       400:
+ *         description: Erreur de validation
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.put(
   '/:id',
@@ -192,7 +377,7 @@ router.put(
     body('websiteUrl').optional().isURL(),
     body('logoUrl').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -224,15 +409,28 @@ router.put(
  *     tags: [Merchants]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du partenaire marchand
  *     responses:
  *       200:
  *         description: Partenaire supprimé
+ *       404:
+ *         description: Partenaire non trouvé
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé (admin requis)
  */
 router.delete(
   '/:id',
   authenticate,
   requireAdmin,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const merchant = await Merchant.findByIdAndDelete(req.params.id);
       if (!merchant) {
@@ -246,4 +444,5 @@ router.delete(
 );
 
 export default router;
+
 

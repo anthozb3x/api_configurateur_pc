@@ -1,3 +1,77 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ConfigurationComponent:
+ *       type: object
+ *       required:
+ *         - component
+ *         - quantity
+ *       properties:
+ *         component:
+ *           type: string
+ *           description: ID du composant (ref Component)
+ *           example: "507f1f77bcf86cd799439011"
+ *         quantity:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *           description: Quantité de ce composant
+ *           example: 1
+ *         selectedMerchant:
+ *           type: string
+ *           description: ID du marchand sélectionné (ref Merchant)
+ *           example: "507f1f77bcf86cd799439013"
+ *         price:
+ *           type: number
+ *           minimum: 0
+ *           description: Prix unitaire résolu
+ *           example: 549.99
+ *     Configuration:
+ *       type: object
+ *       required:
+ *         - user
+ *         - name
+ *         - components
+ *         - totalCost
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: ID unique de la configuration
+ *           example: "507f1f77bcf86cd799439011"
+ *         user:
+ *           type: string
+ *           description: ID de l'utilisateur propriétaire (ref User)
+ *           example: "507f1f77bcf86cd799439012"
+ *         name:
+ *           type: string
+ *           description: Nom de la configuration
+ *           example: "PC Gaming Haut de Gamme"
+ *         components:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/ConfigurationComponent'
+ *           description: Liste des composants de la configuration
+ *         totalCost:
+ *           type: number
+ *           minimum: 0
+ *           default: 0
+ *           description: Coût total calculé automatiquement
+ *           example: 2499.99
+ *         currency:
+ *           type: string
+ *           default: EUR
+ *           description: Devise du coût total
+ *           example: "EUR"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de création
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de dernière modification
+ */
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IConfigurationComponent {

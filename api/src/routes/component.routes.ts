@@ -1,6 +1,7 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import Component from '../models/Component.model';
+import Merchant from '../models/Merchant.model';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.middleware';
 
 const router = express.Router();
@@ -35,7 +36,7 @@ router.get(
     query('brand').optional().trim(),
     query('search').optional().trim(),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -106,6 +107,76 @@ router.get(
 
 /**
  * @swagger
+ * /api/components/{id}/prices:
+ *   get:
+ *     summary: Liste les prix marchands disponibles pour un composant
+ *     tags: [Components]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du composant
+ *     responses:
+ *       200:
+ *         description: Liste des prix par partenaire marchand
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   merchant:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       websiteUrl:
+ *                         type: string
+ *                       logoUrl:
+ *                         type: string
+ *                   price:
+ *                     type: object
+ *       404:
+ *         description: Composant non trouvé
+ */
+router.get(
+  '/:id/prices',
+  async (req, res) => {
+    try {
+      const component = await Component.findById(req.params.id);
+      if (!component) {
+        return res.status(404).json({ message: 'Composant non trouvé' });
+      }
+
+      const merchants = await Merchant.find({
+        'prices.component': req.params.id,
+        isActive: true,
+      }).select('name websiteUrl logoUrl prices');
+
+      const result = merchants.map((m) => ({
+        merchant: {
+          _id: m._id,
+          name: m.name,
+          websiteUrl: m.websiteUrl,
+          logoUrl: m.logoUrl,
+        },
+        price: m.prices.find((p) => p.component.toString() === req.params.id),
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/components:
  *   post:
  *     summary: Crée un nouveau composant (Admin uniquement)
@@ -155,7 +226,7 @@ router.post(
     body('specifications').optional().isObject(),
     body('imageUrl').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -198,7 +269,7 @@ router.put(
     body('model').optional().trim().notEmpty(),
     body('imageUrl').optional().isURL(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -240,7 +311,7 @@ router.delete(
   '/:id',
   authenticate,
   requireAdmin,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const component = await Component.findByIdAndDelete(req.params.id);
       if (!component) {
@@ -254,4 +325,5 @@ router.delete(
 );
 
 export default router;
+
 

@@ -72,14 +72,21 @@ router.post(
 
       await user.save();
 
+      // Vérifier que JWT_SECRET est défini
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error('JWT_SECRET n\'est pas défini dans les variables d\'environnement');
+        return res.status(500).json({ message: 'Erreur de configuration du serveur' });
+      }
+
       // Generate JWT
       const token = jwt.sign(
-        { userId: user._id },
-        process.env.JWT_SECRET || '',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        { userId: user._id.toString() },
+        jwtSecret,
+        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         message: 'Utilisateur créé avec succès',
         token,
         user: {
@@ -91,7 +98,12 @@ router.post(
         },
       });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      // Ne pas exposer les détails de l'erreur pour des raisons de sécurité
+      if (error.code === 11000) {
+        return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+      }
+      console.error('Erreur lors de l\'inscription:', error);
+      return res.status(500).json({ message: 'Une erreur est survenue lors de l\'inscription' });
     }
   }
 );
@@ -150,14 +162,21 @@ router.post(
         return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
       }
 
+      // Vérifier que JWT_SECRET est défini
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error('JWT_SECRET n\'est pas défini dans les variables d\'environnement');
+        return res.status(500).json({ message: 'Erreur de configuration du serveur' });
+      }
+
       // Generate JWT
       const token = jwt.sign(
-        { userId: user._id },
-        process.env.JWT_SECRET || '',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        { userId: user._id.toString() },
+        jwtSecret,
+        { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'] }
       );
 
-      res.json({
+      return res.json({
         message: 'Connexion réussie',
         token,
         user: {
@@ -169,7 +188,9 @@ router.post(
         },
       });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      // Ne pas exposer les détails de l'erreur pour des raisons de sécurité
+      console.error('Erreur lors de la connexion:', error);
+      return res.status(500).json({ message: 'Une erreur est survenue lors de la connexion' });
     }
   }
 );
