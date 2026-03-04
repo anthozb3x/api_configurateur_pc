@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -33,12 +34,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Connexion Administrateur</CardTitle>
-          <CardDescription>
-            Connectez-vous pour accéder au backoffice
-          </CardDescription>
+      <Card className="w-full max-w-lg">
+        <CardHeader className="flex flex-col items-center space-y-4">
+          <Image
+            src="/logo(2).png"
+            alt="ConfigurateurPC Logo"
+            width={500}
+            height={500}
+            style={{ width: '400px', height: '400px', maxWidth: '100%' }}
+            className="object-contain"
+          />
+          <div className="text-center">
+            <CardTitle>Connexion Administrateur</CardTitle>
+            <CardDescription>
+              Connectez-vous pour accéder au backoffice
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -4,7 +4,7 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { diagnostics: false }],
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -16,4 +16,3 @@ module.exports = {
   coverageDirectory: 'coverage',
   verbose: true,
 };
-

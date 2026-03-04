@@ -1,5 +1,5 @@
-import express from 'express';
-import { body, validationResult, query } from 'express-validator';
+import express, { Response } from 'express';
+import { body, validationResult } from 'express-validator';
 import Category from '../models/Category.model';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.middleware';
 
@@ -97,7 +97,7 @@ router.post(
     body('name').trim().notEmpty().withMessage('Le nom est requis'),
     body('description').optional().trim(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -146,7 +146,7 @@ router.put(
     body('name').optional().trim().notEmpty(),
     body('description').optional().trim(),
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -194,7 +194,7 @@ router.delete(
   '/:id',
   authenticate,
   requireAdmin,
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const category = await Category.findByIdAndDelete(req.params.id);
       if (!category) {

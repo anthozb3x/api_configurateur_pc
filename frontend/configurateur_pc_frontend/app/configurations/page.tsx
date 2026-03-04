@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,7 +31,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { Search, Eye, Trash2, Plus, X } from 'lucide-react';
+import { Search, Eye, Trash2, Plus, X, Download, CalendarIcon } from 'lucide-react';
 import type { Configuration, User, Component, Merchant, Category } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
@@ -41,6 +42,7 @@ interface ConfigurationComponent {
 }
 
 export default function ConfigurationsPage() {
+  const router = useRouter();
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [components, setComponents] = useState<Component[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,6 +59,8 @@ export default function ConfigurationsPage() {
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedComponent, setSelectedComponent] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -101,6 +105,23 @@ export default function ConfigurationsPage() {
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la suppression');
+    }
+  };
+
+  const handleExportPDF = async (id: string) => {
+    try {
+      const blob = await api.exportConfigurationPDF(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `configuration-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF exporté avec succès');
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de l\'export PDF');
     }
   };
 
@@ -174,10 +195,19 @@ export default function ConfigurationsPage() {
       typeof config.user === 'string'
         ? 'Utilisateur'
         : `${config.user.firstName} ${config.user.lastName}`;
-    return (
+    const matchesSearch =
       config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      user.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const configDate = new Date(config.createdAt);
+    const matchesDateFrom = dateFrom
+      ? configDate >= new Date(dateFrom)
+      : true;
+    const matchesDateTo = dateTo
+      ? configDate <= new Date(dateTo + 'T23:59:59')
+      : true;
+
+    return matchesSearch && matchesDateFrom && matchesDateTo;
   });
 
   const filteredComponents = components.filter((comp) => {
@@ -201,6 +231,40 @@ export default function ConfigurationsPage() {
     );
   };
 
+  const getComponentPrice = (
+    componentId: string,
+    selectedMerchantId?: string
+  ): number => {
+    const component = components.find((c) => c._id === componentId);
+    if (!component) return 0;
+
+    // Si un marchand est sélectionné, utiliser son prix
+    if (selectedMerchantId) {
+      const merchant = merchants.find((m) => m._id === selectedMerchantId);
+      if (merchant) {
+        const merchantPrice = merchant.prices.find(
+          (p) =>
+            (typeof p.component === 'string'
+              ? p.component
+              : p.component._id) === componentId
+        );
+        if (merchantPrice) {
+          return merchantPrice.price;
+        }
+      }
+    }
+
+    // Sinon, utiliser le prix du composant
+    return component.price || 0;
+  };
+
+  const calculateTotal = (): number => {
+    return formData.selectedComponents.reduce((total, comp) => {
+      const price = getComponentPrice(comp.component, comp.selectedMerchant);
+      return total + price * comp.quantity;
+    }, 0);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -212,13 +276,13 @@ export default function ConfigurationsPage() {
             </p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Créer une configuration
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Créer une nouvelle configuration</DialogTitle>
                 <DialogDescription>
@@ -248,7 +312,15 @@ export default function ConfigurationsPage() {
                         onValueChange={setSelectedCategory}
                       >
                         <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Filtrer par catégorie" />
+                          <SelectValue 
+                            placeholder="Filtrer par catégorie"
+                            value={selectedCategory}
+                            render={(value) => {
+                              if (!value) return 'Filtrer par catégorie';
+                              const category = categories.find((cat) => cat._id === value);
+                              return category?.name || value;
+                            }}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">Toutes les catégories</SelectItem>
@@ -264,7 +336,17 @@ export default function ConfigurationsPage() {
                         onValueChange={setSelectedComponent}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Sélectionner un composant" />
+                          <SelectValue 
+                            placeholder="Sélectionner un composant"
+                            value={selectedComponent}
+                            render={(value) => {
+                              if (!value) return 'Sélectionner un composant';
+                              const component = components.find((c) => c._id === value);
+                              return component 
+                                ? `${component.title} - ${component.brand} (${component.model})`
+                                : value;
+                            }}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {filteredComponents.map((comp) => (
@@ -322,7 +404,7 @@ export default function ConfigurationsPage() {
                                   <X className="h-4 w-4" />
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                   <Label>Quantité</Label>
                                   <Input
@@ -358,7 +440,25 @@ export default function ConfigurationsPage() {
                                       }}
                                     >
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Aucun partenaire" />
+                                        <SelectValue 
+                                          placeholder="Aucun partenaire"
+                                          value={selectedComp.selectedMerchant || ''}
+                                          render={(value) => {
+                                            if (!value) return 'Aucun partenaire';
+                                            const merchant = merchants.find((m) => m._id === value);
+                                            if (!merchant) return value;
+                                            const price = merchant.prices.find(
+                                              (p) =>
+                                                (typeof p.component === 'string'
+                                                  ? p.component
+                                                  : p.component._id) ===
+                                                selectedComp.component
+                                            );
+                                            return price
+                                              ? `${merchant.name} - ${price.price.toFixed(2)} €`
+                                              : merchant.name;
+                                          }}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         <SelectItem value="">Aucun partenaire</SelectItem>
@@ -384,6 +484,26 @@ export default function ConfigurationsPage() {
                                     </Select>
                                   </div>
                                 )}
+                                <div className="space-y-2">
+                                  <Label>Prix</Label>
+                                  <div className="flex items-center h-10 px-3 py-2 text-sm border rounded-md bg-muted">
+                                    {getComponentPrice(
+                                      selectedComp.component,
+                                      selectedComp.selectedMerchant
+                                    ).toFixed(2)}{' '}
+                                    {formData.currency} / unité
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Total:{' '}
+                                    {(
+                                      getComponentPrice(
+                                        selectedComp.component,
+                                        selectedComp.selectedMerchant
+                                      ) * selectedComp.quantity
+                                    ).toFixed(2)}{' '}
+                                    {formData.currency}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           );
@@ -392,6 +512,24 @@ export default function ConfigurationsPage() {
                     )}
                   </div>
                 </div>
+
+                {formData.selectedComponents.length > 0 && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Nombre de composants: {formData.selectedComponents.length}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Total</p>
+                        <p className="text-2xl font-bold">
+                          {calculateTotal().toFixed(2)} {formData.currency}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2">
                   <Button
@@ -417,14 +555,49 @@ export default function ConfigurationsPage() {
           </Dialog>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom ou utilisateur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou utilisateur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2 items-center">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-40"
+              placeholder="Date début"
+              title="Date de début"
+            />
+            <span className="text-muted-foreground">-</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-40"
+              placeholder="Date fin"
+              title="Date de fin"
+            />
+            {(dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                title="Effacer les filtres de date"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="rounded-lg border">
@@ -474,14 +647,24 @@ export default function ConfigurationsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleViewConfig(config)}
+                            onClick={() => router.push(`/configurations/${config._id}`)}
+                            title="Voir les détails"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleExportPDF(config._id)}
+                            title="Exporter en PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(config._id)}
+                            title="Supprimer"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -496,12 +679,26 @@ export default function ConfigurationsPage() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedConfig?.name}</DialogTitle>
-              <DialogDescription>
-                Détails de la configuration
-              </DialogDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>{selectedConfig?.name}</DialogTitle>
+                  <DialogDescription>
+                    Détails de la configuration
+                  </DialogDescription>
+                </div>
+                {selectedConfig && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportPDF(selectedConfig._id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exporter en PDF
+                  </Button>
+                )}
+              </div>
             </DialogHeader>
             {selectedConfig && (
               <div className="space-y-4">

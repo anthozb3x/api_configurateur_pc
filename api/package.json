@@ -13,7 +13,9 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "init:admin": "tsx src/scripts/init-admin.ts",
-    "seed:categories": "tsx src/scripts/seed-categories.ts"
+    "seed:categories": "tsx src/scripts/seed-categories.ts",
+    "createmocks": "tsx src/scripts/create-mocks.ts",
+    "init:createmocks": "tsx src/scripts/create-mocks.ts"
   },
   "keywords": [
     "api",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import type { User, Configuration } from '@/lib/types';
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +53,8 @@ export default function UsersPage() {
   const handleViewUser = async (user: User) => {
     try {
       const userData = await api.getUser(user._id);
-      setSelectedUser(userData);
+      // L'API retourne { user, configurations }
+      setSelectedUser(userData.user);
       setUserConfigurations(userData.configurations || []);
       setIsDialogOpen(true);
     } catch (error: any) {
@@ -135,7 +138,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleViewUser(user)}
+                        onClick={() => router.push(`/users/${user._id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

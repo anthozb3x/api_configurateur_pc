@@ -133,7 +133,7 @@ export default function MerchantsPage() {
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="mr-2 h-4 w-4" />
                 Ajouter un partenaire
@@ -296,7 +296,17 @@ export default function MerchantsPage() {
                         ? `${merchant.commissionRate}%`
                         : 'N/A'}
                     </TableCell>
-                    <TableCell>{merchant.prices.length} prix</TableCell>
+                    <TableCell>
+                      {merchant.prices.length > 0 ? (
+                        <span className="text-sm">
+                          {merchant.prices.length} composant{merchant.prices.length > 1 ? 's' : ''}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          Aucun prix défini
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span
                         className={`rounded-full px-2 py-1 text-xs ${
